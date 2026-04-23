@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>圓的面積 — 探索 A = π r²</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 15px 20px;
+    font-family: '標楷體', '楷體', 'KaiTi', '思源宋體', serif;
+    background: linear-gradient(135deg, #FFF8E7 0%, #E8F4FD 100%);
+    color: #3D2E28;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 15px;
+  }
+
+  h1 {
+    font-size: 32px;
+    color: #FF6B6B;
+    margin: 0 0 6px;
+    text-shadow: 2px 2px 0 #FFE066;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    color: #6B4C3B;
+    margin: 0;
+    opacity: 0.9;
+  }
+
+  .container {
+    max-width: 1300px;
+    width: 100%;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 15px;
+    flex: 1;
+  }
+
+  @media (max-width: 950px) {
+    .container { grid-template-columns: 1fr; }
+  }
+
+  .canvas-card {
+    background: white;
+    border: 4px solid #FF8A80;
+    border-radius: 25px;
+    padding: 10px;
+    box-shadow: 0 6px 0 #FFB6C1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* 防止溢出 */
+  }
+
+  /* 關鍵修復：強制畫板維持 1000:600 比例，並根據空間自動縮放 */
+  canvas {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1000 / 600;
+    background: #FFFCF5;
+    border-radius: 15px;
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card {
+    background: white;
+    border-radius: 20px;
+    padding: 15px 20px;
+    border: 3px solid;
+    box-shadow: 0 5px 0 rgba(0,0,0,0.08);
+  }
+
+  .card.controls { border-color: #7ECBF1; box-shadow: 0 5px 0 #B6E0F5; }
+  .card.formula  { border-color: #9EE8C5; box-shadow: 0 5px 0 #C5F0DC; }
+  .card.tips     { border-color: #CBB4F7; box-shadow: 0 5px 0 #DCC9FA; }
+
+  .card h2 {
+    margin: 0 0 10px;
+    font-size: 20px;
+    color: #FF6B6B;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .row { margin: 10px 0; }
+  .row label {
+    font-size: 15px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    color: #6B4C3B;
+  }
+
+  .pill {
+    background: #FFE066;
+    color: #6B4C3B;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+  }
+
+  input[type=range] {
+    width: 100%;
+    height: 24px;
+    -webkit-appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 8px;
+    background: linear-gradient(90deg, #FFB6C1, #7ECBF1);
+    border-radius: 4px;
+    border: 2px solid #6B4C3B;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 22px;
+    width: 22px;
+    border-radius: 50%;
+    background: #FFE066;
+    border: 3px solid #FF6B6B;
+    margin-top: -8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .button-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  button {
+    flex: 1;
+    padding: 10px 5px;
+    font-size: 15px;
+    font-weight: bold;
+    font-family: inherit;
+    color: white;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: transform 0.1s;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+  }
+  button:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.15); }
+  .btn-reset { background: #7ECBF1; color: #3D2E28; }
+  .btn-preset { background: #9EE8C5; color: #3D2E28; }
+
+  .formula-display {
+    background: #FFF8E7;
+    border: 2px dashed #FFB6C1;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .formula-display .row-f {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .formula-display .label-f { color: #6B4C3B; }
+  .formula-display .value-f {
+    font-family: 'Consolas', monospace;
+    color: #FF6B6B;
+    font-weight: bold;
+  }
+
+  .highlight {
+    background: #FFE066;
+    padding: 5px 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: #6B4C3B;
+    margin-top: 8px;
+    border: 2px solid #FF6B6B;
+  }
+
+  .tips ul {
+    margin: 0;
+    padding-left: 20px;
+    line-height: 1.6;
+    font-size: 14px;
+    color: #6B4C3B;
+  }
+  .tips li { margin-bottom: 4px; }
+
+  footer {
+    text-align: center;
+    margin-top: 15px;
+    color: #8A7A6E;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🟡 圓的面積 — 探索 A = π r²</h1>
+  <p class="subtitle">把圓形連著攤平拉直成一橫條，再切兩半重疊，看看會變成什麼形狀？</p>
+</header>
+
+<div class="container">
+
+  <div class="canvas-card">
+    <canvas id="cv"></canvas>
+  </div>
+
+  <div class="panel">
+
+    <!-- Controls -->
+    <div class="card controls">
+      <h2>🎛 操控板</h2>
+
+      <div class="row">
+        <label>切成等份 N <span class="pill" id="nVal">8</span></label>
+        <input type="range" id="nSlider" min="2" max="120" value="8" step="2">
+      </div>
+
+      <div class="row">
+        <label>變形程度 <span class="pill" id="tVal">0%</span></label>
+        <input type="range" id="tSlider" min="0" max="100" value="0">
+      </div>
+
+      <div class="row">
+        <label>圓的半徑 r <span class="pill" id="rVal">110</span></label>
+        <input type="range" id="rSlider" min="60" max="130" value="110" step="5">
+      </div>
+
+      <div class="button-row">
+        <button class="btn-preset" id="btnCircle">⭕ 圓形</button>
+        <button class="btn-preset" id="btnPara">▭ 平行四邊形</button>
+      </div>
+      <div class="button-row">
+        <button class="btn-reset" id="btnReset">↺ 重置設定</button>
+      </div>
+    </div>
+
+    <!-- Formula -->
+    <div class="card formula">
+      <h2>📐 推導公式</h2>
+      <div class="formula-display">
+        <div class="row-f"><span class="label-f">圓周長：</span><span class="value-f">2π r</span></div>
+        <div class="row-f"><span class="label-f" style="color:#FFB6C1;">↓ 連住滾動攤平 ↓</span><span></span></div>
+        <div class="row-f"><span class="label-f">橫條總長：</span><span class="value-f">2π r</span></div>
+        <div class="row-f"><span class="label-f" style="color:#FFB6C1;">↓ 切半、躍起翻轉 ↓</span><span></span></div>
+        <div class="row-f"><span class="label-f">長 (底)：</span><span class="value-f" id="fLen">π r</span></div>
+        <div class="row-f"><span class="label-f">高：</span><span class="value-f" id="fHei">r</span></div>
+      </div>
+      <div class="highlight">
+        面積 = π r × r = <span style="color:#FF6B6B">π r²</span>
+      </div>
+      <div class="formula-display" style="margin-top:8px;">
+        <div class="row-f"><span class="label-f">當 r =</span><span class="value-f" id="curR">120</span></div>
+        <div class="row-f"><span class="label-f">面積 ≈</span><span class="value-f" id="curArea">45239</span></div>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="card tips">
+      <h2>💡 教學貼士</h2>
+      <ul>
+        <li>慢慢拉動滑桿，觀察圓形如何「解開」並滾動鋪平。</li>
+        <li>觀察橫條如何自動向中間靠攏、切半及翻轉。</li>
+        <li>逐步把 N 加大，形狀會愈來愈像長方形。</li>
+        <li>引導：「橫條切兩半重疊，平行四邊形嘅長就係 π r。」</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<footer>
+  保良局黃永樹小學 · 五年級數學教學工具 · 2026
+</footer>
+
+<script>
+(() => {
+  const canvas = document.getElementById('cv');
+  const ctx = canvas.getContext('2d');
+
+  // 邏輯繪圖尺寸 (1000x600 固定比例，自動縮放顯示)
+  const W = 1000, H = 600;
+  const DPR = window.devicePixelRatio || 1;
+
+  // 全自動畫板縮放邏輯
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    // 設定物理像素
+    canvas.width  = rect.width  * DPR;
+    canvas.height = rect.height * DPR;
+    
+    // 計算 CSS 寬度與邏輯寬度嘅縮放比例
+    const scale = rect.width / W;
+    
+    // 套用縮放變形，畫圖時依舊當 1000x600 咁畫
+    ctx.setTransform(DPR * scale, 0, 0, DPR * scale, 0, 0);
+  }
+
+  const nSlider = document.getElementById('nSlider');
+  const tSlider = document.getElementById('tSlider');
+  const rSlider = document.getElementById('rSlider');
+  const nVal = document.getElementById('nVal');
+  const tVal = document.getElementById('tVal');
+  const rVal = document.getElementById('rVal');
+  const fLen = document.getElementById('fLen');
+  const fHei = document.getElementById('fHei');
+  const curR = document.getElementById('curR');
+  const curArea = document.getElementById('curArea');
+
+  let N = +nSlider.value;
+  let t = +tSlider.value / 100;
+  let r = +rSlider.value;
+
+  function layout() {
+    return {
+      centerY: 280, // 圓心及橫條頂部嘅 Y 坐標
+      r: r
+    };
+  }
+
+  const palette = [
+    '#FF8A80', '#FFD180', '#FFE066', '#A8E6A1', '#9EE8C5',
+    '#7ECBF1', '#9FB7F7', '#CBB4F7', '#FFB6C1', '#FFA855'
+  ];
+  
+  function easeInOutCubic(x) {
+    return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  }
+
+  // 物理模型：滾動攤平 (Unrolling) + 居中重疊
+  function getSectorParams(i, tt, L) {
+    const alpha = Math.PI / N;
+    const arcLen = 2 * Math.PI * L.r / N;
+    const totalCircumference = 2 * Math.PI * L.r;
+    
+    // 動態計算起點：保證橫條展開後完美置中
+    const stripLeftX = W / 2 - totalCircumference / 2; 
+    
+    let cx, cy, theta;
+
+    if (tt <= 0.5) {
+      // 階段一 (0% - 50%)：滾動攤平
+      let t1 = tt / 0.5;
+      const unrolledLength = t1 * totalCircumference;
+      const myArcPos = (i + 0.5) * arcLen;
+      
+      if (myArcPos <= unrolledLength) {
+        // A：已攤平躺在地
+        cx = stripLeftX + myArcPos;
+        cy = L.centerY;      
+        theta = Math.PI / 2; 
+      } else {
+        // B：未攤平，隨圓滾動
+        const currentCircleCx = stripLeftX + unrolledLength;
+        const currentCircleCy = L.centerY;
+        const rolledAngle = unrolledLength / L.r; 
+        const initialAngle = Math.PI / 2 - (myArcPos / L.r); 
+        
+        theta = initialAngle + rolledAngle;
+        cx = currentCircleCx;
+        cy = currentCircleCy;
+      }
+      
+    } else {
+      // 階段二 (50% - 100%)：向中間靠攏並切半躍起翻轉
+      let t2 = easeInOutCubic((tt - 0.5) / 0.5);
+      const halfCircumference = totalCircumference / 2;
+      
+      const finalStripCx = stripLeftX + (i + 0.5) * arcLen;
+      const paraLeftX = W / 2 - halfCircumference / 2;
+      
+      if (i < N / 2) {
+        // 左半邊：平移
+        const targetCx = paraLeftX + (i + 0.5) * arcLen;
+        cx = finalStripCx + (targetCx - finalStripCx) * t2;
+        cy = L.centerY;
+        theta = Math.PI / 2;
+      } else {
+        // 右半邊：向左躍起翻轉
+        const j = i - N / 2; 
+        const targetCx = paraLeftX + (j + 1) * arcLen; 
+        const targetCy = L.centerY + L.r; 
+        
+        const dx = targetCx - finalStripCx;
+        const dy = targetCy - L.centerY;
+        
+        const hopY = Math.sin(t2 * Math.PI) * 140;
+
+        cx = finalStripCx + dx * t2;
+        cy = L.centerY + dy * t2 - hopY; 
+        theta = Math.PI / 2 + (-Math.PI) * t2;
+      }
+    }
+
+    return { cx, cy, theta, alpha };
+  }
+
+  function drawSector(i, tt, L) {
+    const { cx, cy, theta, alpha } = getSectorParams(i, tt, L);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy); 
+    const x1 = cx + L.r * Math.cos(theta - alpha);
+    const y1 = cy + L.r * Math.sin(theta - alpha);
+    ctx.lineTo(x1, y1);
+    ctx.arc(cx, cy, L.r, theta - alpha, theta + alpha);
+    ctx.closePath();
+    
+    ctx.fillStyle = palette[i % palette.length];
+    ctx.fill();
+    ctx.strokeStyle = '#3D2E28';
+    ctx.lineWidth = N > 60 ? 0.4 : 0.8;
+    ctx.stroke();
+  }
+
+  function drawArrow(x1, y1, x2, y2, color) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    const ah = 10;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ah * Math.cos(ang - 0.4), y2 - ah * Math.sin(ang - 0.4));
+    ctx.lineTo(x2 - ah * Math.cos(ang + 0.4), y2 - ah * Math.sin(ang + 0.4));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  function setText(font, fillStyle, baseline='middle', align='center') {
+    ctx.font = font;
+    ctx.fillStyle = fillStyle;
+    ctx.textBaseline = baseline;
+    ctx.textAlign = align;
+  }
+
+  function drawLabels(L) {
+    const totalCircumference = 2 * Math.PI * L.r;
+    const stripLeftX = W / 2 - totalCircumference / 2; 
+    
+    // 圓形階段標籤
+    if (t < 0.45) {
+      const op = t < 0.1 ? 1 : 1 - (t - 0.1) / 0.35;
+      ctx.globalAlpha = Math.max(0, op);
+      
+      const unrolledLength = Math.min(1, t / 0.5) * totalCircumference;
+      const currentCircleCx = stripLeftX + unrolledLength;
+      const currentCircleCy = L.centerY;
+
+      drawArrow(currentCircleCx, currentCircleCy, currentCircleCx + L.r * 0.95, currentCircleCy, '#3D2E28');
+      setText('bold 18px 標楷體', '#3D2E28', 'bottom', 'center');
+      ctx.fillText('r', currentCircleCx + L.r * 0.5, currentCircleCy - 5);
+
+      setText('bold 16px 標楷體', '#FF6B6B', 'middle', 'center');
+      ctx.fillText('圓周長 = 2π r', currentCircleCx, currentCircleCy + L.r + 35);
+      ctx.globalAlpha = 1;
+    }
+
+    // 橫條階段標籤
+    if (t > 0.35 && t < 0.65) {
+      const op = Math.min(1, Math.min((t - 0.35) / 0.15, (0.65 - t) / 0.15));
+      ctx.globalAlpha = op;
+      
+      const halfCircumference = totalCircumference / 2;
+      const targetLeftX = W / 2 - halfCircumference;
+      let currentLeftX = stripLeftX;
+      if (t > 0.5) {
+        let t2 = easeInOutCubic((t - 0.5) / 0.5);
+        currentLeftX = stripLeftX + (targetLeftX - stripLeftX) * t2;
+      }
+      
+      const currentRightX = currentLeftX + totalCircumference;
+      const arrowY = L.centerY + L.r + 25;
+      
+      drawArrow(currentLeftX, arrowY, currentRightX, arrowY, '#7B68EE');
+      drawArrow(currentRightX, arrowY, currentLeftX, arrowY, '#7B68EE');
+      setText('bold 16px 標楷體', '#7B68EE', 'top', 'center');
+      ctx.fillText('橫條總長 = 2π r', (currentLeftX + currentRightX) / 2, arrowY + 6);
+      ctx.globalAlpha = 1;
+    }
+
+    // 平行四邊形階段標籤
+    if (t > 0.8) {
+      const op = Math.min(1, (t - 0.8) / 0.1);
+      ctx.globalAlpha = op;
+      const halfCircumference = totalCircumference / 2;
+      const paraLeftX = W / 2 - halfCircumference / 2;
+      const paraRightX = W / 2 + halfCircumference / 2;
+      const baseY = L.centerY + L.r + 25;
+      
+      drawArrow(paraLeftX, baseY, paraRightX, baseY, '#FF6B6B');
+      drawArrow(paraRightX, baseY, paraLeftX, baseY, '#FF6B6B');
+      setText('bold 17px 標楷體', '#FF6B6B', 'top', 'center');
+      ctx.fillText('長 = π r', W / 2, baseY + 6);
+
+      const hxRight = paraRightX + 25;
+      drawArrow(hxRight, L.centerY, hxRight, L.centerY + L.r, '#2EA04A');
+      drawArrow(hxRight, L.centerY + L.r, hxRight, L.centerY, '#2EA04A');
+      setText('bold 17px 標楷體', '#2EA04A', 'middle', 'left');
+      ctx.fillText('高 = r', hxRight + 8, L.centerY + L.r / 2);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawTitle() {
+    let title;
+    if      (t < 0.05) title = '🟠 原本的圓形';
+    else if (t < 0.45) title = '🛤️ 順序連著滾動攤平成橫條';
+    else if (t < 0.55) title = '📏 攤平成橫條 (總長 = 2π r)';
+    else if (t < 0.92) title = '✂️ 切成兩半，向中靠攏躍起翻轉';
+    else               title = '✨ 重疊成平行四邊形';
+    setText('bold 24px 標楷體', '#3D2E28', 'top', 'center');
+    ctx.fillText(title, W / 2, 16);
+
+    setText('14px 標楷體', '#8A7A6E', 'top', 'center');
+    ctx.fillText(`(切成 ${N} 等份 ・ 變形 ${Math.round(t*100)}% )`, W / 2, 46);
+  }
+
+  function draw() {
+    ctx.fillStyle = '#FFFCF5';
+    ctx.fillRect(0, 0, W, H);
+
+    const L = layout();
+    drawTitle();
+
+    if (t < 0.6) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(40, L.centerY + L.r);
+      ctx.lineTo(960, L.centerY + L.r);
+      ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (t <= 0.5) {
+      for (let i = N - 1; i >= 0; i--) drawSector(i, t, L);
+    } else {
+      for (let i = Math.floor(N / 2) - 1; i >= 0; i--) drawSector(i, t, L);
+      for (let i = N - 1; i >= Math.floor(N / 2); i--) drawSector(i, t, L);
+    }
+
+    drawLabels(L);
+  }
+
+  function updateUI() {
+    nVal.textContent = N;
+    tVal.textContent = Math.round(t * 100) + '%';
+    rVal.textContent = r;
+
+    const lenPx = (Math.PI * r).toFixed(1);
+    fLen.textContent = `π × ${r} ≈ ${lenPx}`;
+    fHei.textContent = r;
+    curR.textContent = r;
+    curArea.textContent = (Math.PI * r * r).toFixed(0);
+  }
+
+  function refresh() {
+    N = +nSlider.value;
+    t = +tSlider.value / 100;
+    r = +rSlider.value;
+    updateUI();
+    draw();
+  }
+
+  nSlider.addEventListener('input', refresh);
+  tSlider.addEventListener('input', refresh);
+  rSlider.addEventListener('input', refresh);
+
+  document.getElementById('btnCircle').addEventListener('click', () => {
+    tSlider.value = 0; refresh();
+  });
+  document.getElementById('btnPara').addEventListener('click', () => {
+    tSlider.value = 100; refresh();
+  });
+  document.getElementById('btnReset').addEventListener('click', () => {
+    nSlider.value = 8; tSlider.value = 0; rSlider.value = 110;
+    refresh();
+  });
+
+  function init() {
+    resizeCanvas();
+    refresh();
+  }
+  
+  // 當視窗大細改變時，自動重新計算縮放並繪圖
+  window.addEventListener('resize', () => { 
+    resizeCanvas(); 
+    draw(); 
+  });
+  
+  init();
+})();
+</script>
+
+</body>
+</html>
