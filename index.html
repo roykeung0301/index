@@ -59,10 +59,9 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden; /* 防止溢出 */
+    overflow: hidden;
   }
 
-  /* 關鍵修復：強制畫板維持 1000:600 比例，並根據空間自動縮放 */
   canvas {
     display: block;
     width: 100%;
@@ -86,7 +85,6 @@
   }
 
   .card.controls { border-color: #7ECBF1; box-shadow: 0 5px 0 #B6E0F5; }
-  .card.formula  { border-color: #9EE8C5; box-shadow: 0 5px 0 #C5F0DC; }
   .card.tips     { border-color: #CBB4F7; box-shadow: 0 5px 0 #DCC9FA; }
 
   .card h2 {
@@ -166,40 +164,6 @@
   .btn-reset { background: #7ECBF1; color: #3D2E28; }
   .btn-preset { background: #9EE8C5; color: #3D2E28; }
 
-  .formula-display {
-    background: #FFF8E7;
-    border: 2px dashed #FFB6C1;
-    border-radius: 12px;
-    padding: 10px 12px;
-    font-size: 15px;
-    line-height: 1.7;
-  }
-
-  .formula-display .row-f {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .formula-display .label-f { color: #6B4C3B; }
-  .formula-display .value-f {
-    font-family: 'Consolas', monospace;
-    color: #FF6B6B;
-    font-weight: bold;
-  }
-
-  .highlight {
-    background: #FFE066;
-    padding: 5px 10px;
-    border-radius: 8px;
-    text-align: center;
-    font-size: 18px;
-    font-weight: bold;
-    color: #6B4C3B;
-    margin-top: 8px;
-    border: 2px solid #FF6B6B;
-  }
-
   .tips ul {
     margin: 0;
     padding-left: 20px;
@@ -232,7 +196,6 @@
 
   <div class="panel">
 
-    <!-- Controls -->
     <div class="card controls">
       <h2>🎛 操控板</h2>
 
@@ -260,27 +223,6 @@
       </div>
     </div>
 
-    <!-- Formula -->
-    <div class="card formula">
-      <h2>📐 推導公式</h2>
-      <div class="formula-display">
-        <div class="row-f"><span class="label-f">圓周長：</span><span class="value-f">2π r</span></div>
-        <div class="row-f"><span class="label-f" style="color:#FFB6C1;">↓ 連住滾動攤平 ↓</span><span></span></div>
-        <div class="row-f"><span class="label-f">橫條總長：</span><span class="value-f">2π r</span></div>
-        <div class="row-f"><span class="label-f" style="color:#FFB6C1;">↓ 切半、躍起翻轉 ↓</span><span></span></div>
-        <div class="row-f"><span class="label-f">長 (底)：</span><span class="value-f" id="fLen">π r</span></div>
-        <div class="row-f"><span class="label-f">高：</span><span class="value-f" id="fHei">r</span></div>
-      </div>
-      <div class="highlight">
-        面積 = π r × r = <span style="color:#FF6B6B">π r²</span>
-      </div>
-      <div class="formula-display" style="margin-top:8px;">
-        <div class="row-f"><span class="label-f">當 r =</span><span class="value-f" id="curR">120</span></div>
-        <div class="row-f"><span class="label-f">面積 ≈</span><span class="value-f" id="curArea">45239</span></div>
-      </div>
-    </div>
-
-    <!-- Tips -->
     <div class="card tips">
       <h2>💡 教學貼士</h2>
       <ul>
@@ -302,21 +244,14 @@
   const canvas = document.getElementById('cv');
   const ctx = canvas.getContext('2d');
 
-  // 邏輯繪圖尺寸 (1000x600 固定比例，自動縮放顯示)
   const W = 1000, H = 600;
   const DPR = window.devicePixelRatio || 1;
 
-  // 全自動畫板縮放邏輯
   function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
-    // 設定物理像素
     canvas.width  = rect.width  * DPR;
     canvas.height = rect.height * DPR;
-    
-    // 計算 CSS 寬度與邏輯寬度嘅縮放比例
     const scale = rect.width / W;
-    
-    // 套用縮放變形，畫圖時依舊當 1000x600 咁畫
     ctx.setTransform(DPR * scale, 0, 0, DPR * scale, 0, 0);
   }
 
@@ -326,10 +261,6 @@
   const nVal = document.getElementById('nVal');
   const tVal = document.getElementById('tVal');
   const rVal = document.getElementById('rVal');
-  const fLen = document.getElementById('fLen');
-  const fHei = document.getElementById('fHei');
-  const curR = document.getElementById('curR');
-  const curArea = document.getElementById('curArea');
 
   let N = +nSlider.value;
   let t = +tSlider.value / 100;
@@ -337,7 +268,7 @@
 
   function layout() {
     return {
-      centerY: 280, // 圓心及橫條頂部嘅 Y 坐標
+      centerY: 280, 
       r: r
     };
   }
@@ -351,30 +282,25 @@
     return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
   }
 
-  // 物理模型：滾動攤平 (Unrolling) + 居中重疊
   function getSectorParams(i, tt, L) {
     const alpha = Math.PI / N;
     const arcLen = 2 * Math.PI * L.r / N;
     const totalCircumference = 2 * Math.PI * L.r;
     
-    // 動態計算起點：保證橫條展開後完美置中
     const stripLeftX = W / 2 - totalCircumference / 2; 
     
     let cx, cy, theta;
 
     if (tt <= 0.5) {
-      // 階段一 (0% - 50%)：滾動攤平
       let t1 = tt / 0.5;
       const unrolledLength = t1 * totalCircumference;
       const myArcPos = (i + 0.5) * arcLen;
       
       if (myArcPos <= unrolledLength) {
-        // A：已攤平躺在地
         cx = stripLeftX + myArcPos;
         cy = L.centerY;      
         theta = Math.PI / 2; 
       } else {
-        // B：未攤平，隨圓滾動
         const currentCircleCx = stripLeftX + unrolledLength;
         const currentCircleCy = L.centerY;
         const rolledAngle = unrolledLength / L.r; 
@@ -386,7 +312,6 @@
       }
       
     } else {
-      // 階段二 (50% - 100%)：向中間靠攏並切半躍起翻轉
       let t2 = easeInOutCubic((tt - 0.5) / 0.5);
       const halfCircumference = totalCircumference / 2;
       
@@ -394,13 +319,11 @@
       const paraLeftX = W / 2 - halfCircumference / 2;
       
       if (i < N / 2) {
-        // 左半邊：平移
         const targetCx = paraLeftX + (i + 0.5) * arcLen;
         cx = finalStripCx + (targetCx - finalStripCx) * t2;
         cy = L.centerY;
         theta = Math.PI / 2;
       } else {
-        // 右半邊：向左躍起翻轉
         const j = i - N / 2; 
         const targetCx = paraLeftX + (j + 1) * arcLen; 
         const targetCy = L.centerY + L.r; 
@@ -465,7 +388,6 @@
     const totalCircumference = 2 * Math.PI * L.r;
     const stripLeftX = W / 2 - totalCircumference / 2; 
     
-    // 圓形階段標籤
     if (t < 0.45) {
       const op = t < 0.1 ? 1 : 1 - (t - 0.1) / 0.35;
       ctx.globalAlpha = Math.max(0, op);
@@ -483,7 +405,6 @@
       ctx.globalAlpha = 1;
     }
 
-    // 橫條階段標籤
     if (t > 0.35 && t < 0.65) {
       const op = Math.min(1, Math.min((t - 0.35) / 0.15, (0.65 - t) / 0.15));
       ctx.globalAlpha = op;
@@ -506,7 +427,6 @@
       ctx.globalAlpha = 1;
     }
 
-    // 平行四邊形階段標籤
     if (t > 0.8) {
       const op = Math.min(1, (t - 0.8) / 0.1);
       ctx.globalAlpha = op;
@@ -575,12 +495,6 @@
     nVal.textContent = N;
     tVal.textContent = Math.round(t * 100) + '%';
     rVal.textContent = r;
-
-    const lenPx = (Math.PI * r).toFixed(1);
-    fLen.textContent = `π × ${r} ≈ ${lenPx}`;
-    fHei.textContent = r;
-    curR.textContent = r;
-    curArea.textContent = (Math.PI * r * r).toFixed(0);
   }
 
   function refresh() {
@@ -611,7 +525,6 @@
     refresh();
   }
   
-  // 當視窗大細改變時，自動重新計算縮放並繪圖
   window.addEventListener('resize', () => { 
     resizeCanvas(); 
     draw(); 
