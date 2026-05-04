@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>圓的面積 — 探索與觀察</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 15px 20px;
+    font-family: '標楷體', '楷體', 'KaiTi', '思源宋體', serif;
+    background: linear-gradient(135deg, #FFF8E7 0%, #E8F4FD 100%);
+    color: #3D2E28;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 15px;
+  }
+
+  h1 {
+    font-size: 36px;
+    color: #FF6B6B;
+    margin: 0 0 6px;
+    text-shadow: 2px 2px 0 #FFE066;
+  }
+
+  .subtitle {
+    font-size: 18px;
+    color: #6B4C3B;
+    margin: 0;
+    opacity: 0.9;
+  }
+
+  .container {
+    max-width: 1300px;
+    width: 100%;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 15px;
+    flex: 1;
+  }
+
+  @media (max-width: 950px) {
+    .container { grid-template-columns: 1fr; }
+  }
+
+  .canvas-card {
+    background: white;
+    border: 4px solid #FF8A80;
+    border-radius: 25px;
+    padding: 10px;
+    box-shadow: 0 6px 0 #FFB6C1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1000 / 600;
+    background: #FFFCF5;
+    border-radius: 15px;
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card {
+    background: white;
+    border-radius: 20px;
+    padding: 15px 20px;
+    border: 3px solid;
+    box-shadow: 0 5px 0 rgba(0,0,0,0.08);
+  }
+
+  .card.controls { border-color: #7ECBF1; box-shadow: 0 5px 0 #B6E0F5; }
+  .card.tips     { border-color: #CBB4F7; box-shadow: 0 5px 0 #DCC9FA; }
+
+  .card h2 {
+    margin: 0 0 10px;
+    font-size: 22px;
+    color: #FF6B6B;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .row { margin: 10px 0; }
+  .row label {
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    color: #6B4C3B;
+  }
+
+  .pill {
+    background: #FFE066;
+    color: #6B4C3B;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-family: 'Consolas', monospace;
+    font-size: 15px;
+  }
+
+  input[type=range] {
+    width: 100%;
+    height: 28px;
+    -webkit-appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 10px;
+    background: linear-gradient(90deg, #FFB6C1, #7ECBF1);
+    border-radius: 5px;
+    border: 2px solid #6B4C3B;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 26px;
+    width: 26px;
+    border-radius: 50%;
+    background: #FFE066;
+    border: 3px solid #FF6B6B;
+    margin-top: -10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .button-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  button {
+    flex: 1;
+    padding: 12px 5px;
+    font-size: 16px;
+    font-weight: bold;
+    font-family: inherit;
+    color: white;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: transform 0.1s;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+  }
+  button:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.15); }
+  .btn-reset { background: #7ECBF1; color: #3D2E28; }
+  .btn-preset { background: #9EE8C5; color: #3D2E28; }
+
+  .tips ul {
+    margin: 0;
+    padding-left: 20px;
+    line-height: 1.8;
+    font-size: 16px;
+    color: #6B4C3B;
+  }
+  .tips li { margin-bottom: 6px; }
+
+  footer {
+    text-align: center;
+    margin-top: 20px;
+    color: #8A7A6E;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🟡 圓的面積</h1>
+  <p class="subtitle">把圓形切成許多小扇形，再重新排列，看看會變成什麼形狀？</p>
+</header>
+
+<div class="container">
+
+  <div class="canvas-card">
+    <canvas id="cv"></canvas>
+  </div>
+
+  <div class="panel">
+
+    <div class="card controls">
+      <h2>🎛 操控板</h2>
+
+      <div class="row">
+        <label>切成等份 N <span class="pill" id="nVal">8</span></label>
+        <input type="range" id="nSlider" min="2" max="120" value="8" step="2">
+      </div>
+
+      <div class="row">
+        <label>變形程度 <span class="pill" id="tVal">0%</span></label>
+        <input type="range" id="tSlider" min="0" max="100" value="0">
+      </div>
+
+      <div class="row" style="display:none;"> <!-- 隱藏半徑調整以保持簡約 -->
+        <label>圓的半徑 r <span class="pill" id="rVal">110</span></label>
+        <input type="range" id="rSlider" min="60" max="130" value="110" step="5">
+      </div>
+
+      <div class="button-row">
+        <button class="btn-preset" id="btnCircle">⭕ 圓形</button>
+        <button class="btn-preset" id="btnPara">▭ 排列</button>
+      </div>
+      <div class="button-row">
+        <button class="btn-reset" id="btnReset">↺ 重置設定</button>
+      </div>
+    </div>
+
+    <div class="card tips">
+      <h2>💡 教學貼士</h2>
+      <ul>
+        <li>調整變形程度，觀察圓形會如何改變。</li>
+        <li>觀察當切割份數 N 增加時，形狀會有什麼變化。</li>
+        <li>思考：排列後圖形的「長」和「高」與原本的圓有什麼關係？</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span style="font-size: 22px; font-weight: bold;">保良局黃永樹小學</span> · 六年級數學教學工具 · 2026
+</footer>
+
+<script>
+(() => {
+  const canvas = document.getElementById('cv');
+  const ctx = canvas.getContext('2d');
+
+  const W = 1000, H = 600;
+  const DPR = window.devicePixelRatio || 1;
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width  = rect.width  * DPR;
+    canvas.height = rect.height * DPR;
+    const scale = rect.width / W;
+    ctx.setTransform(DPR * scale, 0, 0, DPR * scale, 0, 0);
+  }
+
+  const nSlider = document.getElementById('nSlider');
+  const tSlider = document.getElementById('tSlider');
+  const rSlider = document.getElementById('rSlider');
+  const nVal = document.getElementById('nVal');
+  const tVal = document.getElementById('tVal');
+  const rVal = document.getElementById('rVal');
+
+  let N = +nSlider.value;
+  let t = +tSlider.value / 100;
+  let r = +rSlider.value;
+
+  function layout() {
+    return {
+      centerY: 280, 
+      r: r
+    };
+  }
+
+  const palette = [
+    '#FF8A80', '#FFD180', '#FFE066', '#A8E6A1', '#9EE8C5',
+    '#7ECBF1', '#9FB7F7', '#CBB4F7', '#FFB6C1', '#FFA855'
+  ];
+  
+  function easeInOutCubic(x) {
+    return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  }
+
+  function getSectorParams(i, tt, L) {
+    const alpha = Math.PI / N;
+    const arcLen = 2 * Math.PI * L.r / N;
+    const totalCircumference = 2 * Math.PI * L.r;
+    
+    const stripLeftX = W / 2 - totalCircumference / 2; 
+    
+    let cx, cy, theta;
+
+    if (tt <= 0.5) {
+      let t1 = tt / 0.5;
+      const unrolledLength = t1 * totalCircumference;
+      const myArcPos = (i + 0.5) * arcLen;
+      
+      if (myArcPos <= unrolledLength) {
+        cx = stripLeftX + myArcPos;
+        cy = L.centerY;      
+        theta = Math.PI / 2; 
+      } else {
+        const currentCircleCx = stripLeftX + unrolledLength;
+        const currentCircleCy = L.centerY;
+        const rolledAngle = unrolledLength / L.r; 
+        const initialAngle = Math.PI / 2 - (myArcPos / L.r); 
+        
+        theta = initialAngle + rolledAngle;
+        cx = currentCircleCx;
+        cy = currentCircleCy;
+      }
+      
+    } else {
+      let t2 = easeInOutCubic((tt - 0.5) / 0.5);
+      const halfCircumference = totalCircumference / 2;
+      
+      const finalStripCx = stripLeftX + (i + 0.5) * arcLen;
+      const paraLeftX = W / 2 - halfCircumference / 2;
+      
+      if (i < N / 2) {
+        const targetCx = paraLeftX + (i + 0.5) * arcLen;
+        cx = finalStripCx + (targetCx - finalStripCx) * t2;
+        cy = L.centerY;
+        theta = Math.PI / 2;
+      } else {
+        const j = i - N / 2; 
+        const targetCx = paraLeftX + (j + 1) * arcLen; 
+        const targetCy = L.centerY + L.r; 
+        
+        const dx = targetCx - finalStripCx;
+        const dy = targetCy - L.centerY;
+        
+        const hopY = Math.sin(t2 * Math.PI) * 140;
+
+        cx = finalStripCx + dx * t2;
+        cy = L.centerY + dy * t2 - hopY; 
+        theta = Math.PI / 2 + (-Math.PI) * t2;
+      }
+    }
+
+    return { cx, cy, theta, alpha };
+  }
+
+  function drawSector(i, tt, L) {
+    const { cx, cy, theta, alpha } = getSectorParams(i, tt, L);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy); 
+    const x1 = cx + L.r * Math.cos(theta - alpha);
+    const y1 = cy + L.r * Math.sin(theta - alpha);
+    ctx.lineTo(x1, y1);
+    ctx.arc(cx, cy, L.r, theta - alpha, theta + alpha);
+    ctx.closePath();
+    
+    ctx.fillStyle = palette[i % palette.length];
+    ctx.fill();
+    ctx.strokeStyle = '#3D2E28';
+    ctx.lineWidth = N > 60 ? 0.4 : 0.8;
+    ctx.stroke();
+  }
+
+  function drawArrow(x1, y1, x2, y2, color) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    const ah = 12;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ah * Math.cos(ang - 0.4), y2 - ah * Math.sin(ang - 0.4));
+    ctx.lineTo(x2 - ah * Math.cos(ang + 0.4), y2 - ah * Math.sin(ang + 0.4));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  function setText(font, fillStyle, baseline='middle', align='center') {
+    ctx.font = font;
+    ctx.fillStyle = fillStyle;
+    ctx.textBaseline = baseline;
+    ctx.textAlign = align;
+  }
+
+  function drawLabels(L) {
+    const totalCircumference = 2 * Math.PI * L.r;
+    const stripLeftX = W / 2 - totalCircumference / 2; 
+    
+    // 圓形階段標籤 (t 接近 0 時顯示，且隨圓心滾動)
+    if (t < 0.15) {
+      const op = Math.min(1, (0.15 - t) / 0.15);
+      ctx.globalAlpha = op;
+      
+      const unrolledLength = Math.min(1, t / 0.5) * totalCircumference;
+      const currentCircleCx = stripLeftX + unrolledLength;
+      const currentCircleCy = L.centerY;
+
+      drawArrow(currentCircleCx, currentCircleCy, currentCircleCx + L.r * 0.95, currentCircleCy, '#3D2E28');
+      setText('bold 24px 標楷體', '#3D2E28', 'bottom', 'center');
+      ctx.fillText('r', currentCircleCx + L.r * 0.5, currentCircleCy - 5);
+      ctx.globalAlpha = 1;
+    }
+
+    // 50% 階段標籤 (橫條總長)
+    if (t > 0.4 && t < 0.6) {
+      const op = Math.min(1, Math.min((t - 0.4) / 0.1, (0.6 - t) / 0.1));
+      ctx.globalAlpha = op;
+      const totalCircumference = 2 * Math.PI * L.r;
+      const stripLeftX = W / 2 - totalCircumference / 2;
+      const stripRightX = W / 2 + totalCircumference / 2;
+      const arrowY = L.centerY + L.r + 35;
+      
+      drawArrow(stripLeftX, arrowY, stripRightX, arrowY, '#7B68EE');
+      drawArrow(stripRightX, arrowY, stripLeftX, arrowY, '#7B68EE');
+      setText('bold 24px 標楷體', '#7B68EE', 'top', 'center');
+      ctx.fillText('弧條總長=', W / 2, arrowY + 10);
+      ctx.globalAlpha = 1;
+    }
+
+    // 100% 階段標籤 (長=, 高=)
+    if (t > 0.85) {
+      const op = Math.min(1, (t - 0.85) / 0.1);
+      ctx.globalAlpha = op;
+      const halfCircumference = totalCircumference / 2;
+      const paraLeftX = W / 2 - halfCircumference / 2;
+      const paraRightX = W / 2 + halfCircumference / 2;
+      const baseY = L.centerY + L.r + 35;
+      
+      const labelSuffix = (t > 0.92) ? "=" : "";
+
+      drawArrow(paraLeftX, baseY, paraRightX, baseY, '#FF6B6B');
+      drawArrow(paraRightX, baseY, paraLeftX, baseY, '#FF6B6B');
+      setText('bold 24px 標楷體', '#FF6B6B', 'top', 'center');
+      ctx.fillText('長' + labelSuffix, W / 2, baseY + 10);
+
+      const hxRight = paraRightX + 35;
+      drawArrow(hxRight, L.centerY, hxRight, L.centerY + L.r, '#2EA04A');
+      drawArrow(hxRight, L.centerY + L.r, hxRight, L.centerY, '#2EA04A');
+      setText('bold 24px 標楷體', '#2EA04A', 'middle', 'left');
+      ctx.fillText('高' + labelSuffix, hxRight + 12, L.centerY + L.r / 2);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawTitle() {
+    let title;
+    if      (t < 0.05) title = '🟠 原本的圓形';
+    else if (t < 0.45) title = '🌸 展開圓周 → 切成扇形';
+    else if (t < 0.55) title = '📏 展開為直線';
+    else if (t < 0.92) title = '▭ 互相嵌入';
+    else               title = '✨ 重新排列';
+    setText('bold 28px 標楷體', '#3D2E28', 'top', 'center');
+    ctx.fillText(title, W / 2, 16);
+
+    setText('16px 標楷體', '#8A7A6E', 'top', 'center');
+    ctx.fillText(`(份數 ${N} ・ 變形 ${Math.round(t*100)}% )`, W / 2, 52);
+  }
+
+  function drawCircumferenceLine(tt, L) {
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+
+    for (let i = 0; i < N; i++) {
+      const { cx, cy, theta, alpha } = getSectorParams(i, tt, L);
+      ctx.beginPath();
+      ctx.arc(cx, cy, L.r, theta - alpha, theta + alpha);
+      ctx.stroke();
+    }
+  }
+
+  function draw() {
+    ctx.fillStyle = '#FFFCF5';
+    ctx.fillRect(0, 0, W, H);
+
+    const L = layout();
+    drawTitle();
+
+    if (t <= 0.5) {
+      for (let i = N - 1; i >= 0; i--) drawSector(i, t, L);
+    } else {
+      for (let i = Math.floor(N / 2) - 1; i >= 0; i--) drawSector(i, t, L);
+      for (let i = N - 1; i >= Math.floor(N / 2); i--) drawSector(i, t, L);
+    }
+
+    drawCircumferenceLine(t, L);
+    drawLabels(L);
+  }
+
+  function updateUI() {
+    nVal.textContent = N;
+    tVal.textContent = Math.round(t * 100) + '%';
+    rVal.textContent = r;
+  }
+
+  function refresh() {
+    N = +nSlider.value;
+    t = +tSlider.value / 100;
+    r = +rSlider.value;
+    updateUI();
+    draw();
+  }
+
+  nSlider.addEventListener('input', refresh);
+  tSlider.addEventListener('input', refresh);
+  rSlider.addEventListener('input', refresh);
+
+  document.getElementById('btnCircle').onclick = () => { tSlider.value = 0; refresh(); };
+  document.getElementById('btnPara').onclick = () => { tSlider.value = 100; refresh(); };
+  document.getElementById('btnReset').onclick = () => {
+    nSlider.value = 8; tSlider.value = 0; rSlider.value = 110;
+    refresh();
+  };
+
+  function init() {
+    resizeCanvas();
+    refresh();
+  }
+  
+  window.addEventListener('resize', () => { 
+    resizeCanvas(); 
+    draw(); 
+  });
+  
+  init();
+})();
+</script>
+
+</body>
+</html>
